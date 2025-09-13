@@ -4,7 +4,7 @@ Indoor weather station that shows temperature, pressure, humidity, and CO2 conce
 
 ## Design choices
 
-**E-ink display**: Waveshare 1.54-inch E-Ink E-Paper Display Panel - Black and White 
+### **E-ink display**: Waveshare 1.54-inch E-Ink E-Paper Display Panel - Black and White 
 
 The parameter values (T, P, H, CO2ppm) need to be constantly displayed and they are updated every ~1-5min.
 The best type of display for these conditions is an e-ink display. 
@@ -17,7 +17,7 @@ I have chosen this specific display because:
 
 SKU: 12561 from Waveshare
 
-**ESP-32 microcontroller**: Waveshare Universal e-Paper Raw Panel Driver Board - ESP32
+### **ESP-32 microcontroller**: Waveshare Universal e-Paper Raw Panel Driver Board - ESP32
 
 ESP32 microcontrollers can be as cheat as an Arduino Nano but supports Wifi and Bluetooth connection.
 I have chosen this specific microcontroller because:
@@ -26,7 +26,7 @@ I have chosen this specific microcontroller because:
 
 SKU: 15823 from Waveshare
 
-**Sensor for temperature, pressure, and humidity**: BME280
+### **Sensor for temperature, pressure, and humidity**: BME280
 
 It is the cheapest 3-in-1 sensor that I could find that can be connected through I2C or SPI.
 
@@ -34,7 +34,7 @@ _Note: do not get confused with the BMP280 sensor (it only measures temperature 
 
 SKU: 001511 from TinyTronics
 
-**Sensor for CO2 concentration**: GY-SCD40
+### **Sensor for CO2 concentration**: GY-SCD40
 
 _Note: this sensor is quite expensive and it is not required for a simple indoors weather station. As I was just going to build it once, I though "might as well add this!"_
 
@@ -53,5 +53,5 @@ All the parts were bought from TinyTronics (cheapest delivery fee, as they are b
 | ESP32 microcontroller | 13.00 |
 | T, P, H sensor | 5.50 |
 | CO2ppm sensor | 18.25 |
-| **Total** | 44.25 |
+| **Total** | **44.25** |
 
