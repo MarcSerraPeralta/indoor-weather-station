@@ -2,6 +2,8 @@
 
 Indoor weather station that shows temperature, pressure, humidity, and CO2 concentration in a e-ink display.
 
+_Missing final weather station picture_
+
 ## Design choices
 
 ### **E-ink display**: Waveshare 1.54-inch E-Ink E-Paper Display Panel - Black and White 
@@ -54,4 +56,11 @@ All the parts were bought from TinyTronics (cheapest delivery fee, as they are b
 | T, P, H sensor | 5.50 |
 | CO2ppm sensor | 18.25 |
 | **Total** | **44.25** |
+
+## Testing the components individually
+
+Each component has been tested 
+(1) to know which software is required to control it, and 
+(2) to check that it works correctly. 
+The scripts and setups to test each component individually can be found in `test_componennts/`.
 
