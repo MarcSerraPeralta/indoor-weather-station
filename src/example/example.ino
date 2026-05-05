@@ -13,7 +13,7 @@
 #include <HTTPClient.h>
 
 // =====================
-// I2C PINS (ESP32)
+// I2C PINS
 // =====================
 #define SDA_PIN 21
 #define SCL_PIN 22
@@ -35,8 +35,10 @@ UWORD Imagesize;
 // =====================
 unsigned long lastMeasurement = 0;
 const unsigned long measurementInterval = 60000; // 1 min
+
 unsigned long lastUpdate = 0;
 const unsigned long updateInterval = 300000; // 5 min
+
 int FULL_REFRESH_EVERY = 11;
 int updateCount = 0;
 
@@ -47,13 +49,29 @@ const char* ssid = "TP-Link_9952";
 const char* password = "";
 
 // =====================
+// CLEAR ROW (FIXES ARTIFACTS)
+// =====================
+void clearRow(int yPos) {
+    int yStart = max(0, yPos - 20);
+    int yEnd   = min((int)EPD_1IN54_V2_HEIGHT,
+                     yPos + Font24.Height + 20);
+
+    Paint_ClearWindows(
+        0,
+        yStart,
+        EPD_1IN54_V2_WIDTH,
+        yEnd,
+        WHITE
+    );
+}
+
+// =====================
 // DRAW DASHBOARD
 // =====================
 void drawDashboard(float temp, float hum, float press, uint16_t co2,
                    int hh, int mm, int dd, int mo, int yy) {
 
     Paint_SelectImage(BlackImage);
-    Paint_Clear(WHITE);
 
     char val[16];
     char footer[64];
@@ -65,7 +83,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     int vertShift = -3;
     int separation = 145;
 
-    // Helper: right align string
+    // Right align
     auto drawRight = [&](const char *text, int yPos) {
         int len = strlen(text);
         int textW = len * Font24.Width;
@@ -73,7 +91,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
         Paint_DrawString_EN(x, yPos, text, &Font24, WHITE, BLACK);
     };
 
-    // Helper: center align string
+    // Center align
     auto drawCentered = [&](const char *text, int yPos) {
         int len = strlen(text);
         int textW = len * Font8.Width;
@@ -84,6 +102,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     // =====================
     // TEMPERATURE
     // =====================
+    clearRow(y);
     sprintf(val, "%.1f", temp);
     drawRight(val, y);
     Paint_DrawString_EN(separation, y - vertShift, "C", &Font16, WHITE, BLACK);
@@ -92,6 +111,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     // =====================
     // CO2
     // =====================
+    clearRow(y);
     sprintf(val, "%u", co2);
     drawRight(val, y);
     Paint_DrawString_EN(separation, y - vertShift, "ppm", &Font16, WHITE, BLACK);
@@ -100,6 +120,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     // =====================
     // HUMIDITY
     // =====================
+    clearRow(y);
     sprintf(val, "%.1f", hum);
     drawRight(val, y);
     Paint_DrawString_EN(separation, y - vertShift, "%", &Font16, WHITE, BLACK);
@@ -108,6 +129,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     // =====================
     // PRESSURE
     // =====================
+    clearRow(y);
     sprintf(val, "%.1f", press);
     drawRight(val, y);
     Paint_DrawString_EN(separation, y - vertShift, "hPa", &Font16, WHITE, BLACK);
@@ -115,27 +137,32 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     // =====================
     // FOOTER
     // =====================
+    int footerY = EPD_1IN54_V2_HEIGHT - 10;
+
+    Paint_ClearWindows(
+        0,
+        footerY - Font8.Height - 4,
+        EPD_1IN54_V2_WIDTH,
+        footerY + Font8.Height + 4,
+        WHITE
+    );
+
     sprintf(footer,
-        "Last updated: %02d:%02d %02d/%02d/%02d",
+        "Last updated: %02d:%02d %02d/%02d/%04d",
         hh, mm, dd, mo, yy);
 
-    int footerY = EPD_1IN54_V2_HEIGHT - 10;
     drawCentered(footer, footerY);
-
-    // Push to display
-    //EPD_1IN54_V2_Display(BlackImage);
 }
 
 // =====================
-// SEND HTTP DATA
+// SEND DATA
 // =====================
 void sendData(float temp, float hum, float press, uint16_t co2,
               int ss, int hh, int mm, int dd, int mo, int yy) {
 
     HTTPClient http;
 
-    String url = "http://192.168.0.50:8000"; // home server IP
-    http.begin(url);
+    http.begin("http://192.168.0.50:8000");
     http.addHeader("Content-Type", "text/plain");
 
     char data[128];
@@ -146,10 +173,10 @@ void sendData(float temp, float hum, float press, uint16_t co2,
         temp, hum, press,
         co2);
 
-    int httpResponseCode = http.POST(data);
+    int code = http.POST(data);
 
     Serial.print("HTTP Response: ");
-    Serial.println(httpResponseCode);
+    Serial.println(code);
 
     http.end();
 }
@@ -162,24 +189,16 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
 
-    printf("Starting Indoor Weather Station...\n");
-
     // DISPLAY INIT
     DEV_Module_Init();
     EPD_1IN54_V2_Init();
     EPD_1IN54_V2_Clear();
-    DEV_Delay_ms(500);
 
-    // BUFFER
     Imagesize = ((EPD_1IN54_V2_WIDTH % 8 == 0) ?
                 (EPD_1IN54_V2_WIDTH / 8) :
                 (EPD_1IN54_V2_WIDTH / 8 + 1)) * EPD_1IN54_V2_HEIGHT;
 
     BlackImage = (UBYTE *)malloc(Imagesize);
-    if (BlackImage == NULL) {
-        printf("Memory allocation failed!\n");
-        while (1);
-    }
 
     Paint_NewImage(BlackImage,
                    EPD_1IN54_V2_WIDTH,
@@ -187,65 +206,35 @@ void setup() {
                    270,
                    WHITE);
 
-    // I2C INIT
+    // I2C
     Wire.begin(SDA_PIN, SCL_PIN);
 
-    // BME280 INIT
-    if (!bme.begin(0x76)) {
-        printf("BME280 not found\n");
-        while (1);
-    }
+    // Sensors
+    bme.begin(0x76);
 
-    // SCD40 INIT
     scd4x.begin(Wire, 0x62);
     scd4x.stopPeriodicMeasurement();
     delay(1000);
     scd4x.startPeriodicMeasurement();
 
-    printf("Sensors ready\n");
-
-    // =====================
-    // WIFI CONNECT
-    // =====================
+    // WIFI
     WiFi.begin(ssid, password);
-    Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
 
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
+    // TIME
+    configTime(3600, 3600, "pool.ntp.org");
 
-    Serial.println("\nWiFi connected");
-
-    // =====================
-    // NTP TIME SETUP
-    // =====================
-    // Netherlands time (CET/CEST with DST)
-    configTime(3600, 3600, "pool.ntp.org", "time.nist.gov");
-
-    // Wait until time is set
     struct tm timeinfo;
-    while (!getLocalTime(&timeinfo)) {
-        Serial.println("Waiting for NTP time...");
-        delay(500);
-    }
+    while (!getLocalTime(&timeinfo)) delay(500);
 
-    Serial.println("Time synchronized");
+    // INITIAL FULL DRAW
+    drawDashboard(0,0,0,0,0,0,0,0,0);
 
-    Serial.println("Draw 0 values to display");
-    EPD_1IN54_V2_Init();
-    EPD_1IN54_V2_Clear();
-    Paint_NewImage(BlackImage,
-                EPD_1IN54_V2_WIDTH,
-                EPD_1IN54_V2_HEIGHT,
-                270,
-                WHITE);
+    EPD_1IN54_V2_Display(BlackImage);
 
-    drawDashboard(0., 0., 0., 0,
-                0, 0, 0, 0, 0);
-
-     EPD_1IN54_V2_Display(BlackImage);
-     Serial.println("Display updated");
+    // CRITICAL: prepare partial mode
+    EPD_1IN54_V2_DisplayPartBaseImage(BlackImage);
+    EPD_1IN54_V2_Init_Partial();
 }
 
 // =====================
@@ -258,39 +247,24 @@ void loop() {
 
     if (millis() - lastMeasurement > measurementInterval && dataReady) {
 
-        // =====================
-        // READ BME280
-        // =====================
         float temp = bme.readTemperature();
         float hum = bme.readHumidity();
         float press = bme.readPressure() / 100.0;
 
-        // =====================
-        // READ SCD40
-        // =====================
         uint16_t co2;
         float t2, h2;
-
         scd4x.readMeasurement(co2, t2, h2);
 
-        // =====================
-        // REAL TIME FROM NTP
-        // =====================
         struct tm timeinfo;
         int ss, hh, mm, dd, mo, yy;
 
-        if (!getLocalTime(&timeinfo)) {
-            Serial.println("Failed to obtain time");
-
-            // fallback values
-            ss = 0, hh = 0, mm = 0, dd = 1, mo = 1, yy = 1970;
-        } else {
+        if (getLocalTime(&timeinfo)) {
             ss = timeinfo.tm_sec;
             hh = timeinfo.tm_hour;
             mm = timeinfo.tm_min;
             dd = timeinfo.tm_mday;
-            mo = timeinfo.tm_mon + 1;     // months are 0-11
-            yy = timeinfo.tm_year + 1900; // years since 1900
+            mo = timeinfo.tm_mon + 1;
+            yy = timeinfo.tm_year + 1900;
         }
 
         sendData(temp, hum, press, co2,
@@ -298,53 +272,51 @@ void loop() {
 
         lastMeasurement = millis();
 
-        Serial.println("Data sent");
-    
         bool nightBlock = (hh >= 1 && hh <= 6);
 
         if ((millis() - lastUpdate > updateInterval) && !nightBlock) {
-
-            // =====================
-            // DRAW SCREEN
-            // =====================
 
             updateCount++;
 
             bool fullRefresh = (updateCount >= FULL_REFRESH_EVERY);
 
             if (fullRefresh) {
+
                 Serial.println("FULL refresh");
 
                 EPD_1IN54_V2_Init();
                 EPD_1IN54_V2_Clear();
+
                 Paint_NewImage(BlackImage,
-                            EPD_1IN54_V2_WIDTH,
-                            EPD_1IN54_V2_HEIGHT,
-                            270,
-                            WHITE);
+                    EPD_1IN54_V2_WIDTH,
+                    EPD_1IN54_V2_HEIGHT,
+                    270,
+                    WHITE);
 
                 drawDashboard(temp, hum, press, co2,
-                            hh, mm, dd, mo, yy);
+                              hh, mm, dd, mo, yy);
 
                 EPD_1IN54_V2_Display(BlackImage);
+
+                // re-enable partial
+                EPD_1IN54_V2_DisplayPartBaseImage(BlackImage);
+                EPD_1IN54_V2_Init_Partial();
 
                 updateCount = 0;
             }
             else {
+
                 Serial.println("PARTIAL refresh");
 
                 drawDashboard(temp, hum, press, co2,
-                            hh, mm, dd, mo, yy);
+                              hh, mm, dd, mo, yy);
 
-                EPD_1IN54_V2_Init_Partial();
                 EPD_1IN54_V2_DisplayPart(BlackImage);
             }
 
             lastUpdate = millis();
-            
-            Serial.printf("Update #%d\n", updateCount);
         }
     }
 
-    delay(10000); // 10 seconds
+    delay(1000);
 }
