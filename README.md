@@ -4,7 +4,8 @@ Indoor weather station that shows temperature, pressure, humidity, and CO2 conce
 
 _Missing final weather station picture_
 
-## Design choices
+
+## Hardware choices
 
 ### **E-ink display**: Waveshare 1.54-inch E-Ink E-Paper Display Panel - Black and White 
 
@@ -45,6 +46,7 @@ It is the cheapest I could find that has good accuracy (+/- 50ppm) in the "norma
 
 SKU: 005207 from TinyTronics
 
+
 ## Price
 
 All the parts were bought from TinyTronics (cheapest delivery fee, as they are based on Eindhoven).
@@ -57,10 +59,29 @@ All the parts were bought from TinyTronics (cheapest delivery fee, as they are b
 | CO2ppm sensor | 18.25 |
 | **Total** | **44.25** |
 
+This price does not include the tools nor cheat materials:
+- a solvering iron
+- soldering tin
+- a 3D printer
+- 3D printer plastic
+
+
+## Software choices
+
+- Check how many times the screen is able to refresh itself? (check datasheet)
+- Can I have access to a clock? (I don't think so, maybe through WiFi...)
+- Do I want to update the screen every 5min? It is not really necessary during the night...
+- If I put a button there to display the info, I will not pay any attention to the weather station because it will be always stationary.
+- I can use partial refreshes for the 12 times it refreshed in an hour (5min * 12 = 60min) and every hour do a full refresh rate (so that the contrast does not deteriorate).
+This way I reduce the number of refreshes (or partial refreshes also count?).
+- I will measure 5 times (per point) and take the average of those measurements to improve the accuracy.
+
+
 ## Testing the components individually
 
 Each component has been tested 
 (1) to know which software is required to control it, and 
 (2) to check that it works correctly. 
 The scripts and setups to test each component individually can be found in `test_componennts/`.
+
 
