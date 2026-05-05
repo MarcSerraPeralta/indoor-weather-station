@@ -8,6 +8,9 @@
 #include <Adafruit_BME280.h>
 #include <SensirionI2cScd4x.h>
 
+#include <WiFi.h>
+#include <time.h>
+
 // =====================
 // I2C PINS (ESP32)
 // =====================
@@ -31,6 +34,12 @@ UWORD Imagesize;
 // =====================
 unsigned long lastUpdate = 0;
 const unsigned long updateInterval = 30000; // 30 seconds
+
+// =====================
+// WIFI
+// =====================
+const char* ssid = "TP-Link_9952";
+const char* password = "";
 
 // =====================
 // DRAW DASHBOARD
@@ -161,6 +170,34 @@ void setup() {
     scd4x.startPeriodicMeasurement();
 
     printf("Sensors ready\n");
+
+    // =====================
+    // WIFI CONNECT
+    // =====================
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi");
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println("\nWiFi connected");
+
+    // =====================
+    // NTP TIME SETUP
+    // =====================
+    // Netherlands time (CET/CEST with DST)
+    configTime(3600, 3600, "pool.ntp.org", "time.nist.gov");
+
+    // Wait until time is set
+    struct tm timeinfo;
+    while (!getLocalTime(&timeinfo)) {
+        Serial.println("Waiting for NTP time...");
+        delay(500);
+    }
+
+    Serial.println("Time synchronized");
 }
 
 // =====================
@@ -189,15 +226,23 @@ void loop() {
         scd4x.readMeasurement(co2, t2, h2);
 
         // =====================
-        // FAKE TIME (replace later with RTC/NTP)
+        // REAL TIME FROM NTP
         // =====================
-        unsigned long s = millis() / 1000;
-        int mm = (s / 60) % 60;
-        int hh = (s / 3600) % 24;
+        struct tm timeinfo;
+        int hh, mm, dd, mo, yy;
 
-        int dd = 5;
-        int mo = 5;
-        int yy = 26;
+        if (!getLocalTime(&timeinfo)) {
+            Serial.println("Failed to obtain time");
+
+            // fallback values
+            hh = 0, mm = 0, dd = 1, mo = 1, yy = 1970;
+        } else {
+            hh = timeinfo.tm_hour;
+            mm = timeinfo.tm_min;
+            dd = timeinfo.tm_mday;
+            mo = timeinfo.tm_mon + 1;     // months are 0-11
+            yy = timeinfo.tm_year + 1900; // years since 1900
+        }
 
         // =====================
         // DRAW SCREEN
