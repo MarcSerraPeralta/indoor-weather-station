@@ -33,8 +33,12 @@ UWORD Imagesize;
 // =====================
 // TIMING
 // =====================
+unsigned long lastMeasurement = 0;
+const unsigned long measurementInterval = 60000; // 1 min
 unsigned long lastUpdate = 0;
-const unsigned long updateInterval = 30000; // 30 seconds
+const unsigned long updateInterval = 300000; // 5 min
+int FULL_REFRESH_EVERY = 11;
+int updateCount = 0;
 
 // =====================
 // WIFI
@@ -119,7 +123,7 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
     drawCentered(footer, footerY);
 
     // Push to display
-    EPD_1IN54_V2_Display(BlackImage);
+    //EPD_1IN54_V2_Display(BlackImage);
 }
 
 // =====================
@@ -237,7 +241,7 @@ void loop() {
     bool dataReady = false;
     scd4x.getDataReadyStatus(dataReady);
 
-    if (millis() - lastUpdate > updateInterval && dataReady) {
+    if (millis() - lastMeasurement > measurementInterval && dataReady) {
 
         // =====================
         // READ BME280
@@ -277,16 +281,55 @@ void loop() {
         sendData(temp, hum, press, co2,
                  ss, hh, mm, dd, mo, yy);
 
-        // =====================
-        // DRAW SCREEN
-        // =====================
-        drawDashboard(temp, hum, press, co2,
-                      hh, mm, dd, mo, yy);
+        lastMeasurement = millis();
 
-        lastUpdate = millis();
+        Serial.println("Data sent");
+    
+        bool nightBlock = (hh >= 1 && hh <= 6);
 
-        Serial.println("Display updated");
+        if ((millis() - lastUpdate > updateInterval) && !nightBlock) {
+
+            // =====================
+            // DRAW SCREEN
+            // =====================
+
+            updateCount++;
+
+            bool fullRefresh = (updateCount >= FULL_REFRESH_EVERY);
+
+            if (fullRefresh) {
+                Serial.println("FULL refresh");
+
+                EPD_1IN54_V2_Init();
+                EPD_1IN54_V2_Clear();
+                Paint_NewImage(BlackImage,
+                            EPD_1IN54_V2_WIDTH,
+                            EPD_1IN54_V2_HEIGHT,
+                            270,
+                            WHITE);
+
+                drawDashboard(temp, hum, press, co2,
+                            hh, mm, dd, mo, yy);
+
+                EPD_1IN54_V2_Display(BlackImage);
+
+                updateCount = 0;
+            }
+            else {
+                Serial.println("PARTIAL refresh");
+
+                drawDashboard(temp, hum, press, co2,
+                            hh, mm, dd, mo, yy);
+
+                EPD_1IN54_V2_Init_Partial();
+                EPD_1IN54_V2_DisplayPart(BlackImage);
+            }
+
+            lastUpdate = millis();
+            
+            Serial.printf("Update #%d\n", updateCount);
+        }
     }
 
-    delay(100);
+    delay(10000); // 10 seconds
 }
