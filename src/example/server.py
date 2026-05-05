@@ -8,6 +8,7 @@ class Handler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode()
 
+        current = DATA_DIR / "weather.csv"
         last_day = DATA_DIR / "weather_last-day.csv"
         last_week = DATA_DIR / "weather_last-week.csv"
         filenames = [last_day, last_week]
@@ -22,6 +23,9 @@ class Handler(BaseHTTPRequestHandler):
             with open(last_week, "a") as f:
                 f.write("date,time,temp,hum,press,co2\n")
 
+        with open(current, "w") as f:
+            f.write("date,time,temp,hum,press,co2\n")
+            f.write(post_data + "\n")
         for filename in filenames:
             with open(filename, "a") as f:
                 f.write(post_data + "\n")
