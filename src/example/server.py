@@ -13,6 +13,8 @@ class Handler(BaseHTTPRequestHandler):
         filenames = [last_day, last_week]
         maxlines = [60 * 24, 60 * 24 * 7]
 
+        DATA_DIR.mkdir(exist_ok=True)
+
         if not last_day.exists():
             with open(last_day, "a") as f:
                 f.write("date,time,temp,hum,press,co2\n")
