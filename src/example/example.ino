@@ -10,6 +10,7 @@
 
 #include <WiFi.h>
 #include <time.h>
+#include <HTTPClient.h>
 
 // =====================
 // I2C PINS (ESP32)
@@ -122,6 +123,34 @@ void drawDashboard(float temp, float hum, float press, uint16_t co2,
 }
 
 // =====================
+// SEND HTTP DATA
+// =====================
+void sendData(float temp, float hum, float press, uint16_t co2,
+              int ss, int hh, int mm, int dd, int mo, int yy) {
+
+    HTTPClient http;
+
+    String url = "http://192.168.0.50:8000"; // home server IP
+    http.begin(url);
+    http.addHeader("Content-Type", "text/plain");
+
+    char data[128];
+    sprintf(data,
+        "%04d-%02d-%02d,%02d:%02d:%02d,%.2f,%.2f,%.2f,%u",
+        yy, mo, dd,
+        hh, mm, ss,
+        temp, hum, press,
+        co2);
+
+    int httpResponseCode = http.POST(data);
+
+    Serial.print("HTTP Response: ");
+    Serial.println(httpResponseCode);
+
+    http.end();
+}
+
+// =====================
 // SETUP
 // =====================
 void setup() {
@@ -229,20 +258,24 @@ void loop() {
         // REAL TIME FROM NTP
         // =====================
         struct tm timeinfo;
-        int hh, mm, dd, mo, yy;
+        int ss, hh, mm, dd, mo, yy;
 
         if (!getLocalTime(&timeinfo)) {
             Serial.println("Failed to obtain time");
 
             // fallback values
-            hh = 0, mm = 0, dd = 1, mo = 1, yy = 1970;
+            ss = 0, hh = 0, mm = 0, dd = 1, mo = 1, yy = 1970;
         } else {
+            ss = timeinfo.tm_sec;
             hh = timeinfo.tm_hour;
             mm = timeinfo.tm_min;
             dd = timeinfo.tm_mday;
             mo = timeinfo.tm_mon + 1;     // months are 0-11
             yy = timeinfo.tm_year + 1900; // years since 1900
         }
+
+        sendData(temp, hum, press, co2,
+                 ss, hh, mm, dd, mo, yy);
 
         // =====================
         // DRAW SCREEN
