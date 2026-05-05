@@ -231,6 +231,21 @@ void setup() {
     }
 
     Serial.println("Time synchronized");
+
+    Serial.println("Draw 0 values to display");
+    EPD_1IN54_V2_Init();
+    EPD_1IN54_V2_Clear();
+    Paint_NewImage(BlackImage,
+                EPD_1IN54_V2_WIDTH,
+                EPD_1IN54_V2_HEIGHT,
+                270,
+                WHITE);
+
+    drawDashboard(0., 0., 0., 0,
+                0, 0, 0, 0, 0);
+
+     EPD_1IN54_V2_Display(BlackImage);
+     Serial.println("Display updated");
 }
 
 // =====================
