@@ -1,5 +1,7 @@
+# Testing individual components
+
 Here we test that we are able to control all four components 
-(ESP32 microcontroller, E-ink display, TPH sensor, and CO2ppm sensor).
+(ESP32 microcontroller, E-ink display, T+P+H sensor, and CO2ppm sensor).
 
 
 # E-ink display
@@ -210,11 +212,3 @@ Humidity = 44.25 %
 -----------------------------
 ```
 
-
-
-
-# Store sensor data in the microcontroller and retrieve it
-
-Use the Wi-Fi to retrieve the sensor data.
-I can set up a cron job to download the data every day.
-YYMMDDHHMM,TTTT,HHHH,PPPPPP\n
